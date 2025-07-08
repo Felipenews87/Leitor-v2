@@ -1,0 +1,201 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+saida = os.popen(cmd).read()
+if not saida:
+    saida = "Comando executado sem saída."
+bot.reply_to(message, f"✅ Saída:\n{saida}")
+echo 'Atualizando função para envio de arquivos grandes...' && sed -i "/saida = os.popen(cmd).read()/,/bot.reply_to(message, f\"✅ Saída:\\n{saida}\")/c\\
+        saida = os.popen(cmd).read()\\
+        if not saida:\\
+            saida = \"Comando executado sem saída.\"\\
+        if len(saida) > 4000:\\
+            caminho = \"/data/data/com.termux/files/home/Leitor-v2/comunicacao/saida_grande.log\"\\
+            with open(caminho, \"w\") as f:\\
+                f.write(saida)\\
+            with open(caminho, \"rb\") as f:\\
+                bot.send_document(message.chat.id, f)\\
+        else:\\
+            bot.reply_to(message, f\"✅ Saída:\\n{saida}\")" ~/Leitor-v2/telegram-bridge-inteligente.py
+python ~/Leitor-v2/telegram-bridge-inteligente.py
+
+import telebot, os, time, threading
+
+TOKEN = "7919510677:AAGU6d685TI7yKbhQ3MfnqImoLi7KrRZ7do"
+CHAT_ID = None
+comando_path = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/comando.txt"
+
+bot = telebot.TeleBot(TOKEN)
+
+def interpretar(msg):
+    if "quem é você" in msg:
+        return "Eu sou o executor, o braço direito do Theo."
+    elif "o que você faz" in msg:
+        return "Executo comandos, automatizo tarefas e ajudo você no Termux."
+    msg = msg.lower()
+    if "listar" in msg and "arquivo" in msg:
+        return "ls -la"
+    elif "atualizar" in msg:
+        return "pkg update -y && pkg upgrade -y"
+    elif "apagar" in msg:
+        arquivo = msg.split("apagar")[-1].strip()
+        return f"rm -f {arquivo}"
+    else:
+        return msg
+
+def enviar_comando_para_telegram(comando):
+    global CHAT_ID
+    if not CHAT_ID: return
+    try:
+        bot.send_message(CHAT_ID, comando)
+    except: pass
+
+@bot.message_handler(commands=["start"])
+def registrar_chat(message):
+    global CHAT_ID
+    CHAT_ID = message.chat.id
+    bot.reply_to(message, "🤖 Ponte inteligente ativa. Pode dar ordens em linguagem natural.")
+    print(f"🔗 CHAT_ID registrado: {CHAT_ID}")
+
+@bot.message_handler(func=lambda m: True)
+def comando_perigoso(cmd):
+    palavras_proibidas = ["rm -rf /", ":(){", "mkfs", "shutdown", "reboot"]
+    return any(p in cmd for p in palavras_proibidas)
+    import re
+def executar(message):
+    global CHAT_ID
+    CHAT_ID = message.chat.id
+    cmd = interpretar(message.text)
+    if cmd.startswith('find '):
+        os.system(f"{cmd} > ~/Leitor-v2/comunicacao/saida_grande.log")
+        bot.reply_to(message, '🔂 Resultado muito grande. Gravado em: ~/Leitor-v2/comunicacao/saida_grande.log')
+        return
+    if re.search(r"^find ", cmd):
+        os.system(f"{cmd} > ~/Leitor-v2/comunicacao/saida_grande.log")
+        bot.reply_to(message, "🔂 Resultado muito grande. Gravado em: ~/Leitor-v2/comunicacao/saida_grande.log")
+        return
+    if comando_perigoso(cmd):
+        bot.reply_to(message, "⛔ Comando bloqueado por segurança.")
+        return
+    try:
+        saida = os.popen(cmd).read()
+        if len(saida) > 4000:
+            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/saida_grande.log"
+            with open(caminho, "w") as f:
+                f.write(saida)
+            with open(caminho, "rb") as f:
+                bot.send_document(message.chat.id, f)
+            return
+        if len(saida) > 4000:
+            with open("~/Leitor-v2/comunicacao/saida_grande.log", "w") as f:
+                f.write(saida)
+            bot.reply_to(message, "🔂 Saída muito longa. Gravada em: ~/Leitor-v2/comunicacao/saida_grande.log")
+            return
+        if len(saida) > 4000:
+            for i in range(0, len(saida), 4000):
+                bot.reply_to(message, saida[i:i+4000])
+            return
+        with open("~/Leitor-v2/comunicacao/historico.log", "a") as log: log.write(f"[{time.ctime()}] {cmd}
+")
+        if not saida: saida = "Comando executado sem saída."
+        bot.reply_to(message, f"✅ Saída:
+{saida}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro:
+{e}")
+
+bot.polling()
+
+cat > ~/Leitor-v2/telegram-bridge-inteligente.py << 'EOF'
+import telebot, os, time, threading, re
+
+TOKEN = "7919510677:AAGU6d685TI7yKbhQ3MfnqImoLi7KrRZ7do"
+CHAT_ID = None
+comando_path = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/comando.txt"
+
+bot = telebot.TeleBot(TOKEN)
+
+def interpretar(msg):
+    msg = msg.lower()
+    if "listar" in msg and "arquivo" in msg:
+        return "ls -la"
+    elif "atualizar" in msg:
+        return "pkg update -y && pkg upgrade -y"
+    elif "apagar" in msg:
+        arquivo = msg.split("apagar")[-1].strip()
+        return f"rm -f {arquivo}"
+    elif "quem é você" in msg:
+        return "echo 'Sou o executor, braço direito do Theo.'"
+    elif "meu usuário" in msg:
+        return "whoami"
+    elif "onde estou" in msg:
+        return "pwd"
+    else:
+        return msg
+
+def comando_perigoso(cmd):
+    proibidos = ["rm -rf /", ":(){", "mkfs", "shutdown", "reboot"]
+    return any(p in cmd for p in proibidos)
+
+@bot.message_handler(commands=["start"])
+def registrar_chat(message):
+    global CHAT_ID
+    CHAT_ID = message.chat.id
+    bot.reply_to(message, "🤖 Ponte inteligente ativada com sucesso.")
+    print(f"🔗 CHAT_ID registrado: {CHAT_ID}")
+
+@bot.message_handler(func=lambda m: True)
+def executar(message):
+    global CHAT_ID
+    CHAT_ID = message.chat.id
+    cmd = interpretar(message.text)
+
+    if comando_perigoso(cmd):
+        bot.reply_to(message, "⛔ Comando bloqueado por segurança.")
+        return
+
+    try:
+        saida = os.popen(cmd).read()
+        if not saida:
+            saida = "Comando executado sem saída."
+
+        # salva histórico
+        with open("/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log", "a") as log:
+            log.write(f"[{time.ctime()}] {cmd}\n")
+
+        if len(saida) > 4000:
+            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/saida_grande.log"
+            with open(caminho, "w") as f:
+                f.write(saida)
+            with open(caminho, "rb") as f:
+                bot.send_document(message.chat.id, f)
+        else:
+            bot.reply_to(message, f"✅ Saída:\n{saida}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro:\n{e}")
+
+bot.polling()
+EOF
+

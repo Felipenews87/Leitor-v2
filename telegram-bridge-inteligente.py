@@ -9,7 +9,6 @@ if not TOKEN:
     exit(1)
 
 bot = telebot.TeleBot(TOKEN)
-
 CHAT_ID = None
 
 def interpretar(msg):
@@ -21,48 +20,23 @@ def interpretar(msg):
     elif "apagar" in msg:
         arquivo = msg.split("apagar")[-1].strip()
         return f"rm -f {arquivo}"
-    elif "quem é você" in msg:
-        return "echo 'Sou o executor, braço direito do Theo.'"
-    elif "meu usuário" in msg:
-        return "whoami"
-    elif "onde estou" in msg:
-        return "pwd"
-    else:
-        return msg
+    return msg
 
-def comando_perigoso(cmd):
-    proibidos = ["rm -rf /", ":(){", "mkfs", "shutdown", "reboot"]
-    return any(p in cmd for p in proibidos)
-
-@bot.message_handler(commands=["start"])
-def registrar_chat(message):
+@bot.message_handler(commands=['start', 'ajuda'])
+def boas_vindas(message):
     global CHAT_ID
     CHAT_ID = message.chat.id
     bot.reply_to(message, "🤖 Ponte inteligente ativada com sucesso.")
-    print(f"🔗 CHAT_ID registrado: {CHAT_ID}")
 
-@bot.message_handler(func=lambda m: True)
-def executar(message):
-    global CHAT_ID
-    CHAT_ID = message.chat.id
-    cmd = interpretar(message.text)
-
-    if comando_perigoso(cmd):
-        bot.reply_to(message, "⛔ Comando bloqueado por segurança.")
-        return
-
+@bot.message_handler(commands=['diagnóstico'])
+def diagnostico(message):
     try:
+        cmd = "bash ~/Leitor-v2/scripts/diagnostico.sh"
         saida = os.popen(cmd).read()
         if not saida:
             saida = "Comando executado sem saída."
-
-        # salvar histórico
-        historico_path = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log"
-        with open(historico_path, "a") as log:
-            log.write(f"[{time.ctime()}] {cmd}\n")
-
         if len(saida) > 4000:
-            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/saida_grande.log"
+            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log"
             with open(caminho, "w") as f:
                 f.write(saida)
             with open(caminho, "rb") as f:
@@ -72,4 +46,25 @@ def executar(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Erro:\n{e}")
 
+@bot.message_handler(func=lambda m: True)
+def terminal(message):
+    global CHAT_ID
+    CHAT_ID = message.chat.id
+    try:
+        cmd = interpretar(message.text)
+        saida = os.popen(cmd).read()
+        if not saida:
+            saida = "Comando executado sem saída."
+        if len(saida) > 4000:
+            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log"
+            with open(caminho, "w") as f:
+                f.write(saida)
+            with open(caminho, "rb") as f:
+                bot.send_document(message.chat.id, f)
+        else:
+            bot.reply_to(message, f"✅ Saída:\n{saida}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro:\n{e}")
+
+print("🔗 CHAT_ID registrado:", CHAT_ID)
 bot.polling()

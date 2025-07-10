@@ -31,12 +31,12 @@ def boas_vindas(message):
 @bot.message_handler(commands=['diagnóstico'])
 def diagnostico(message):
     try:
-        cmd = "bash ~/Leitor-v2/scripts/diagnostico.sh"
+        cmd = "bash ./scripts/diagnostico.sh"
         saida = os.popen(cmd).read()
         if not saida:
             saida = "Comando executado sem saída."
         if len(saida) > 4000:
-            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log"
+            caminho = "./comunicacao/historico.log"
             with open(caminho, "w") as f:
                 f.write(saida)
             with open(caminho, "rb") as f:
@@ -56,7 +56,7 @@ def terminal(message):
         if not saida:
             saida = "Comando executado sem saída."
         if len(saida) > 4000:
-            caminho = "/data/data/com.termux/files/home/Leitor-v2/comunicacao/historico.log"
+            caminho = "./comunicacao/historico.log"
             with open(caminho, "w") as f:
                 f.write(saida)
             with open(caminho, "rb") as f:
